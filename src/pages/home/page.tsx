@@ -114,13 +114,6 @@ export default function HomePage() {
                 {t('nav.home')}
               </Link>
               <Link
-                to="/map-finder"
-                onClick={() => setMobileMenuOpen(false)}
-                className="text-sm font-medium text-gray-700 px-2 py-1.5 hover:text-orange-500 cursor-pointer"
-              >
-                {t('nav.mapFinder')}
-              </Link>
-              <Link
                 to="/restaurants"
                 onClick={() => setMobileMenuOpen(false)}
                 className="text-sm font-medium text-gray-700 px-2 py-1.5 hover:text-orange-500 cursor-pointer"
@@ -133,13 +126,6 @@ export default function HomePage() {
                 className="text-sm font-medium text-gray-700 px-2 py-1.5 hover:text-orange-500 cursor-pointer"
               >
                 {t('nav.ingredients')}
-              </Link>
-              <Link
-                to="/cooking-videos"
-                onClick={() => setMobileMenuOpen(false)}
-                className="text-sm font-medium text-gray-700 px-2 py-1.5 hover:text-orange-500 cursor-pointer"
-              >
-                {t('nav.cookingVideos')}
               </Link>
               <Link
                 to="/review"
