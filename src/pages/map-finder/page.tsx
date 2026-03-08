@@ -19,6 +19,8 @@ type Restaurant = {
   description: string | null;
   image: string | null;
   is_chain?: boolean | null;
+  just_like_home_rating?: number | null;
+  love_score?: number | null;
 };
 
 type RestaurantWithDistance = Restaurant & {
@@ -77,6 +79,7 @@ export default function MapFinderPage() {
 
   const [loading, setLoading] = useState(false);
   const [pinsCount, setPinsCount] = useState(0);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCuisine, setSelectedCuisine] = useState("");
@@ -100,21 +103,24 @@ export default function MapFinderPage() {
     markersRef.current = [];
   }, []);
 
-  const openPopupForRestaurant = useCallback((restaurantId: string | number, source: RestaurantWithDistance[]) => {
-    if (!mapRef.current) return;
+  const openPopupForRestaurant = useCallback(
+    (restaurantId: string | number, source: RestaurantWithDistance[]) => {
+      if (!mapRef.current) return;
 
-    const restaurant = source.find((r) => r.id === restaurantId);
-    if (!restaurant) return;
+      const restaurant = source.find((r) => r.id === restaurantId);
+      if (!restaurant) return;
 
-    const marker = markersRef.current.find((m: any) => {
-      const lngLat = m.getLngLat();
-      return lngLat.lng === restaurant.lng && lngLat.lat === restaurant.lat;
-    });
+      const marker = markersRef.current.find((m: any) => {
+        const lngLat = m.getLngLat();
+        return lngLat.lng === restaurant.lng && lngLat.lat === restaurant.lat;
+      });
 
-    if (marker) {
-      marker.getPopup().addTo(mapRef.current);
-    }
-  }, []);
+      if (marker) {
+        marker.getPopup().addTo(mapRef.current);
+      }
+    },
+    []
+  );
 
   const flyToPlace = useCallback((place: RestaurantWithDistance) => {
     if (!mapRef.current) return;
@@ -148,7 +154,9 @@ export default function MapFinderPage() {
 
     const { data, error } = await supabase
       .from("restaurants")
-      .select("id,name,address,lat,lng,cuisine,description,image,is_chain,approved")
+      .select(
+        "id,name,address,lat,lng,cuisine,description,image,is_chain,approved,just_like_home_rating,love_score"
+      )
       .gte("lat", south)
       .lte("lat", north)
       .gte("lng", west)
@@ -169,6 +177,8 @@ export default function MapFinderPage() {
         lat: Number(r.lat),
         lng: Number(r.lng),
         image: r.image || null,
+        just_like_home_rating: r.just_like_home_rating ?? null,
+        love_score: r.love_score ?? null,
       }))
       .filter((r: Restaurant) => Number.isFinite(r.lat) && Number.isFinite(r.lng))
       .map((r: Restaurant) => ({
@@ -438,40 +448,127 @@ export default function MapFinderPage() {
   return (
     <div className="min-h-screen bg-white">
       <nav className="fixed top-0 left-0 right-0 z-50 bg-white shadow-sm">
-        <div className="w-full px-6 py-3">
+        <div className="w-full px-4 md:px-6 py-3">
           <div className="flex items-center justify-between">
             <Link to="/" className="flex items-center gap-3">
               <div className="flex flex-col leading-tight">
-                <span className="text-2xl font-bold text-gray-900 tracking-tight">Eat Local</span>
-                <span className="text-xs font-medium text-orange-500 tracking-widest uppercase">
+                <span className="text-xl md:text-2xl font-bold text-gray-900 tracking-tight">Eat Local</span>
+                <span className="text-[10px] md:text-xs font-medium text-orange-500 tracking-widest uppercase">
                   Discover · Taste · Connect
                 </span>
               </div>
             </Link>
 
-            <div className="flex items-center gap-8">
-              <Link to="/" className="text-sm font-medium text-gray-600 hover:text-orange-500 transition-colors whitespace-nowrap">
+            <div className="hidden md:flex items-center gap-8">
+              <Link
+                to="/"
+                className="text-sm font-medium text-gray-600 hover:text-orange-500 transition-colors whitespace-nowrap"
+              >
                 {t("nav.home")}
               </Link>
-              <Link to="/restaurants" className="text-sm font-medium text-gray-600 hover:text-orange-500 transition-colors whitespace-nowrap">
+              <Link
+                to="/restaurants"
+                className="text-sm font-medium text-gray-600 hover:text-orange-500 transition-colors whitespace-nowrap"
+              >
                 {t("nav.restaurants")}
               </Link>
-              <Link to="/ingredients" className="text-sm font-medium text-gray-600 hover:text-orange-500 transition-colors whitespace-nowrap">
+              <Link
+                to="/ingredients"
+                className="text-sm font-medium text-gray-600 hover:text-orange-500 transition-colors whitespace-nowrap"
+              >
                 {t("nav.ingredients")}
               </Link>
-              <Link to="/review" className="text-sm font-medium text-gray-600 hover:text-orange-500 transition-colors whitespace-nowrap">
+              <Link
+                to="/review"
+                className="text-sm font-medium text-gray-600 hover:text-orange-500 transition-colors whitespace-nowrap"
+              >
                 {t("nav.reviews")}
               </Link>
               <LanguageSwitcher />
             </div>
+
+            <button
+              className="md:hidden w-10 h-10 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label="Toggle menu"
+            >
+              <i
+                className={`text-xl text-gray-700 ${
+                  mobileMenuOpen ? "ri-close-line" : "ri-menu-line"
+                }`}
+              ></i>
+            </button>
           </div>
+
+          {mobileMenuOpen && (
+            <div className="md:hidden mt-3 pb-4 border-t border-gray-100 pt-4 flex flex-col gap-3">
+              <Link
+                to="/"
+                onClick={() => setMobileMenuOpen(false)}
+                className="text-sm font-medium text-gray-700 px-2 py-1.5 hover:text-orange-500"
+              >
+                {t("nav.home")}
+              </Link>
+              <Link
+                to="/restaurants"
+                onClick={() => setMobileMenuOpen(false)}
+                className="text-sm font-medium text-gray-700 px-2 py-1.5 hover:text-orange-500"
+              >
+                {t("nav.restaurants")}
+              </Link>
+              <Link
+                to="/ingredients"
+                onClick={() => setMobileMenuOpen(false)}
+                className="text-sm font-medium text-gray-700 px-2 py-1.5 hover:text-orange-500"
+              >
+                {t("nav.ingredients")}
+              </Link>
+              <Link
+                to="/review"
+                onClick={() => setMobileMenuOpen(false)}
+                className="text-sm font-medium text-gray-700 px-2 py-1.5 hover:text-orange-500"
+              >
+                {t("nav.reviews")}
+              </Link>
+              <div className="px-2 pt-1">
+                <LanguageSwitcher />
+              </div>
+            </div>
+          )}
         </div>
       </nav>
 
-      <div className="pt-20 h-screen flex">
-        <div className="w-2/5 bg-white border-r border-gray-200 overflow-y-auto">
-          <div className="p-6">
-            <div className="mb-4">
+      <div className="pt-20 md:h-screen flex flex-col md:flex-row">
+        <div className="order-1 md:order-2 w-full md:flex-1 relative h-[38vh] md:h-auto">
+          <div ref={mapContainerRef} className="w-full h-full" />
+
+          <div className="hidden md:block absolute bottom-6 left-6 bg-white rounded-2xl shadow-xl p-4 max-w-xs">
+            <h4 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
+              <i className="ri-map-pin-fill text-orange-500"></i>
+              {t("mapFinder.legend.title")}
+            </h4>
+
+            <div className="space-y-2 text-sm">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
+                <span className="text-gray-700">Nearby restaurant pin</span>
+              </div>
+
+              {nearMeActive && (
+                <div className="flex items-center gap-2 pt-1 border-t border-gray-100 mt-1">
+                  <div className="w-3 h-3 bg-orange-400 rounded-full ring-2 ring-orange-200"></div>
+                  <span className="text-orange-600 font-medium">
+                    Within {NEARBY_RADIUS_MILES} mi of you
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="order-2 md:order-1 w-full md:w-2/5 bg-white border-b md:border-b-0 md:border-r border-gray-200 overflow-y-auto">
+          <div className="p-4 md:p-6">
+            <div className="mb-4 sticky top-0 bg-white z-10 pt-1 pb-2">
               <div className="rounded-xl border-2 border-gray-200 overflow-hidden">
                 <div ref={geocoderContainerRef} className="mapbox-geocoder-wrapper" />
               </div>
@@ -524,10 +621,10 @@ export default function MapFinderPage() {
                 {t("mapFinder.filterByCuisine")}
               </h3>
 
-              <div className="flex flex-wrap gap-2">
+              <div className="flex gap-2 overflow-x-auto pb-1 md:flex-wrap">
                 <button
                   onClick={() => setSelectedCuisine("")}
-                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap ${
                     !selectedCuisine
                       ? "bg-gray-900 text-white"
                       : "bg-gray-100 text-gray-700 hover:bg-gray-200"
@@ -540,7 +637,7 @@ export default function MapFinderPage() {
                   <button
                     key={cuisine}
                     onClick={() => setSelectedCuisine(cuisine)}
-                    className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                    className={`px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap ${
                       selectedCuisine === cuisine
                         ? "bg-gray-900 text-white"
                         : "bg-gray-100 text-gray-700 hover:bg-gray-200"
@@ -557,7 +654,7 @@ export default function MapFinderPage() {
                 {t("mapFinder.sortBy")}
               </h3>
 
-              <div className="flex gap-2 mb-3">
+              <div className="flex flex-col sm:flex-row gap-2 mb-3">
                 <button
                   onClick={() => setSortBy("distance")}
                   className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
@@ -599,7 +696,8 @@ export default function MapFinderPage() {
 
             <div className="mb-4">
               <p className="text-sm text-gray-600">
-                <strong className="text-gray-900">{filteredRestaurants.length}</strong> restaurants found
+                <strong className="text-gray-900">{filteredRestaurants.length}</strong> restaurants
+                found
                 <span className="ml-2 text-xs text-gray-400">
                   {loading ? "Loading…" : `Pins: ${pinsCount}`}
                 </span>
@@ -620,8 +718,8 @@ export default function MapFinderPage() {
                     onClick={() => flyToPlace(restaurant)}
                     className="bg-white border-2 border-gray-200 rounded-2xl overflow-hidden hover:shadow-lg hover:border-orange-500 transition-all duration-300 cursor-pointer"
                   >
-                    <div className="flex">
-                      <div className="w-32 h-32 flex-shrink-0 bg-gray-100">
+                    <div className="flex flex-col sm:flex-row">
+                      <div className="w-full sm:w-32 h-40 sm:h-32 flex-shrink-0 bg-gray-100">
                         <img
                           src={restaurant.image || FALLBACK_IMAGE}
                           alt={restaurant.name}
@@ -632,9 +730,9 @@ export default function MapFinderPage() {
                         />
                       </div>
 
-                      <div className="p-4 flex-1 min-w-0">
+                      <div className="p-3 sm:p-4 flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-2 mb-1">
-                          <h3 className="font-bold text-gray-900 text-lg leading-tight">
+                          <h3 className="font-bold text-gray-900 text-base sm:text-lg leading-tight">
                             {restaurant.name}
                           </h3>
 
@@ -658,12 +756,26 @@ export default function MapFinderPage() {
                           </p>
                         )}
 
-                        <div className="flex items-center gap-4 text-sm flex-wrap">
+                        <div className="flex items-center gap-3 sm:gap-4 text-xs sm:text-sm flex-wrap">
                           <div className="flex items-center gap-1 text-orange-500 font-semibold">
                             <i className="ri-route-line text-xs"></i>
                             {restaurant.distance < 1
                               ? `${(restaurant.distance * 5280).toFixed(0)} ft`
                               : `${restaurant.distance.toFixed(1)} mi`}
+                          </div>
+
+                          <div className="flex items-center gap-1 text-teal-600 font-semibold">
+                            <i className="ri-shield-check-fill text-sm"></i>
+                            {restaurant.just_like_home_rating && restaurant.just_like_home_rating > 0
+                              ? restaurant.just_like_home_rating.toFixed(1)
+                              : "N/A"}
+                          </div>
+
+                          <div className="flex items-center gap-1 text-pink-500 font-semibold">
+                            <i className="ri-heart-fill text-sm"></i>
+                            {restaurant.love_score && restaurant.love_score > 0
+                              ? restaurant.love_score.toFixed(1)
+                              : "N/A"}
                           </div>
 
                           {isNearby && (
@@ -685,33 +797,6 @@ export default function MapFinderPage() {
                   </div>
                   <p className="text-gray-500 font-medium mb-1">No restaurants found</p>
                   <p className="text-gray-400 text-sm">Try changing the filters or moving the map</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div className="flex-1 relative">
-          <div ref={mapContainerRef} className="w-full h-full" />
-
-          <div className="absolute bottom-6 left-6 bg-white rounded-2xl shadow-xl p-4 max-w-xs">
-            <h4 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
-              <i className="ri-map-pin-fill text-orange-500"></i>
-              {t("mapFinder.legend.title")}
-            </h4>
-
-            <div className="space-y-2 text-sm">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
-                <span className="text-gray-700">Nearby restaurant pin</span>
-              </div>
-
-              {nearMeActive && (
-                <div className="flex items-center gap-2 pt-1 border-t border-gray-100 mt-1">
-                  <div className="w-3 h-3 bg-orange-400 rounded-full ring-2 ring-orange-200"></div>
-                  <span className="text-orange-600 font-medium">
-                    Within {NEARBY_RADIUS_MILES} mi of you
-                  </span>
                 </div>
               )}
             </div>

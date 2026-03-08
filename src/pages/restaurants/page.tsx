@@ -6,7 +6,7 @@ import LanguageSwitcher from '../../components/LanguageSwitcher';
 import BackToTop from '../../components/BackToTop';
 import { supabase } from '../../lib/supabase';
 
-type SortOption = 'popularity' | 'authenticity' | 'rating';
+type SortOption = 'popularity' | 'authenticity' | 'love';
 type RegionTab = 'southern-california' | 'usa';
 
 type RestaurantRow = {
@@ -20,8 +20,9 @@ type RestaurantRow = {
   is_chain: boolean | null;
   approved: boolean | null;
   image: string | null;
-  rating: number | null;
   review_count: number | null;
+  just_like_home_rating: number | null;
+  love_score: number | null;
 };
 
 type RestaurantCardData = {
@@ -33,11 +34,9 @@ type RestaurantCardData = {
   lat: number | null;
   lng: number | null;
   image: string;
-  rating: number;
-  priceRange: string;
-  authenticity: number;
-  familyAtmosphere: number;
   reviewCount: number;
+  justLikeHomeRating: number;
+  loveScore: number;
   popularityScore: number;
   region: string;
 };
@@ -49,7 +48,7 @@ export default function RestaurantsPage() {
   const { t } = useTranslation();
 
   const [selectedCuisine, setSelectedCuisine] = useState<string>('');
-  const [sortBy, setSortBy] = useState<SortOption>('rating');
+  const [sortBy, setSortBy] = useState<SortOption>('popularity');
   const [searchQuery, setSearchQuery] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [regionTab, setRegionTab] = useState<RegionTab>('southern-california');
@@ -129,12 +128,10 @@ export default function RestaurantsPage() {
       lat: row.lat,
       lng: row.lng,
       image: row.image || FALLBACK_IMAGE,
-      rating: row.rating ?? 0,
-      priceRange: '$$',
-      authenticity: 8,
-      familyAtmosphere: 8,
       reviewCount: row.review_count ?? 0,
-      popularityScore: row.review_count ?? 0,
+      justLikeHomeRating: row.just_like_home_rating ?? 0,
+      loveScore: row.love_score ?? 0,
+      popularityScore: row.love_score ?? row.review_count ?? 0,
       region: getRegionFromAddress(row.address)
     };
   }
@@ -157,8 +154,9 @@ export default function RestaurantsPage() {
           is_chain,
           approved,
           image,
-          rating,
-          review_count
+          review_count,
+          just_like_home_rating,
+          love_score
         `)
         .eq('approved', true)
         .eq('is_chain', false);
@@ -206,8 +204,8 @@ export default function RestaurantsPage() {
       })
       .sort((a, b) => {
         if (sortBy === 'popularity') return b.popularityScore - a.popularityScore;
-        if (sortBy === 'authenticity') return b.authenticity - a.authenticity;
-        if (sortBy === 'rating') return b.rating - a.rating;
+        if (sortBy === 'authenticity') return b.justLikeHomeRating - a.justLikeHomeRating;
+        if (sortBy === 'love') return b.loveScore - a.loveScore;
         return 0;
       });
   }, [restaurants, regionTab, selectedCounty, selectedCuisine, searchQuery, sortBy]);
@@ -391,19 +389,42 @@ export default function RestaurantsPage() {
               {t('restaurants.sortBy')}
             </span>
 
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap justify-center">
+              <button
+                onClick={() => setSortBy('popularity')}
+                className={`px-3 md:px-5 py-1.5 md:py-2 rounded-lg text-xs md:text-sm font-medium transition-all whitespace-nowrap cursor-pointer ${
+                  sortBy === 'popularity'
+                    ? 'bg-orange-500 text-white'
+                    : 'bg-white text-gray-700 hover:bg-orange-50'
+                }`}
+              >
+                <i className="ri-fire-line mr-1"></i>
+                Popularity
+              </button>
 
-            <button
-              onClick={() => setSortBy(sortBy === 'rating' ? 'popularity' : 'rating')}
-              className={`px-3 md:px-5 py-1.5 md:py-2 rounded-lg text-xs md:text-sm font-medium transition-all whitespace-nowrap cursor-pointer ${
-                sortBy === 'rating'
-                  ? 'bg-orange-500 text-white'
-                  : 'bg-white text-gray-700 hover:bg-orange-50'
-              }`}
-            >
-              <i className="ri-star-line mr-1"></i>
-              {t('restaurants.sort.rating')}
-            </button>
+              <button
+                onClick={() => setSortBy('authenticity')}
+                className={`px-3 md:px-5 py-1.5 md:py-2 rounded-lg text-xs md:text-sm font-medium transition-all whitespace-nowrap cursor-pointer ${
+                  sortBy === 'authenticity'
+                    ? 'bg-orange-500 text-white'
+                    : 'bg-white text-gray-700 hover:bg-orange-50'
+                }`}
+              >
+                <i className="ri-shield-check-line mr-1"></i>
+                Just Like Home
+              </button>
+
+              <button
+                onClick={() => setSortBy('love')}
+                className={`px-3 md:px-5 py-1.5 md:py-2 rounded-lg text-xs md:text-sm font-medium transition-all whitespace-nowrap cursor-pointer ${
+                  sortBy === 'love'
+                    ? 'bg-orange-500 text-white'
+                    : 'bg-white text-gray-700 hover:bg-orange-50'
+                }`}
+              >
+                <i className="ri-heart-line mr-1"></i>
+                Love Score
+              </button>
             </div>
           </div>
         </div>
@@ -451,15 +472,6 @@ export default function RestaurantsPage() {
                       <div className="absolute top-3 left-3 bg-teal-600/95 backdrop-blur-sm px-2.5 py-1 rounded-full">
                         <span className="text-xs font-bold text-white">{restaurant.region}</span>
                       </div>
-
-                      <div className="absolute bottom-3 left-3 flex items-center gap-2">
-                        <div className="bg-white/95 backdrop-blur-sm px-2.5 py-1 rounded-full flex items-center gap-1">
-                          <i className="ri-star-fill text-yellow-500 text-xs md:text-sm"></i>
-                          <span className="text-xs md:text-sm font-bold text-gray-900">
-                            {restaurant.rating}
-                          </span>
-                        </div>
-                      </div>
                     </div>
 
                     <div className="p-4 md:p-6">
@@ -472,6 +484,25 @@ export default function RestaurantsPage() {
                       </p>
 
                       <div className="flex items-center justify-between pt-3 md:pt-4 border-t border-gray-200">
+                        <div className="flex items-center gap-3 md:gap-4">
+                          <div className="flex items-center gap-1">
+                            <i className="ri-shield-check-fill text-teal-600 text-sm"></i>
+                            <span className="text-xs md:text-sm font-semibold text-gray-900">
+                              {restaurant.justLikeHomeRating > 0
+                                ? restaurant.justLikeHomeRating.toFixed(1)
+                                : 'N/A'}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-1">
+                            <i className="ri-heart-fill text-pink-500 text-sm"></i>
+                            <span className="text-xs md:text-sm font-semibold text-gray-900">
+                              {restaurant.loveScore > 0
+                                ? restaurant.loveScore.toFixed(1)
+                                : 'N/A'}
+                            </span>
+                          </div>
+                        </div>
 
                         <div className="text-xs md:text-sm text-gray-500">
                           {restaurant.reviewCount} {t('restaurants.reviews')}
@@ -499,86 +530,147 @@ export default function RestaurantsPage() {
         </div>
       </section>
 
-      <footer className="bg-gradient-to-br from-orange-900 to-orange-800 text-white">
-        <div className="max-w-7xl mx-auto px-4 md:px-6 py-10 md:py-16">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12 mb-10 md:mb-16">
-            <div className="col-span-2 md:col-span-1">
-              <div className="flex flex-col leading-tight mb-3 md:mb-4">
-                <span className="text-xl md:text-2xl font-bold text-white tracking-tight">Eat Local</span>
-                <span className="text-[10px] md:text-xs font-medium text-orange-300 tracking-widest uppercase">
-                  Discover · Taste · Connect
-                </span>
-              </div>
-              <p className="text-xs md:text-sm text-gray-400 leading-relaxed mb-3 md:mb-4">
-                {t('footer.description')}
-              </p>
-              <div className="flex gap-3 md:gap-4">
-                <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="w-9 h-9 md:w-10 md:h-10 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-colors cursor-pointer">
-                  <i className="ri-instagram-line text-lg md:text-xl"></i>
-                </a>
-                <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" className="w-9 h-9 md:w-10 md:h-10 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-colors cursor-pointer">
-                  <i className="ri-facebook-fill text-lg md:text-xl"></i>
-                </a>
-                <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" className="w-9 h-9 md:w-10 md:h-10 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-colors cursor-pointer">
-                  <i className="ri-twitter-x-line text-lg md:text-xl"></i>
-                </a>
-              </div>
-            </div>
-
-            <div>
-              <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-3 md:mb-4">
-                {t('footer.explore.title')}
-              </h3>
-              <ul className="space-y-2 md:space-y-3">
-                <li><Link to="/map-finder" className="text-sm md:text-base text-white hover:text-orange-400 transition-colors cursor-pointer">{t('footer.explore.findRestaurants')}</Link></li>
-                <li><Link to="/restaurants" className="text-sm md:text-base text-white hover:text-orange-400 transition-colors cursor-pointer">{t('footer.explore.browseCuisines')}</Link></li>
-                <li><Link to="/ingredients" className="text-sm md:text-base text-white hover:text-orange-400 transition-colors cursor-pointer">{t('footer.explore.ingredientLibrary')}</Link></li>
-                <li><a href="#reviews" className="text-sm md:text-base text-white hover:text-orange-400 transition-colors cursor-pointer">{t('footer.explore.communityReviews')}</a></li>
-              </ul>
-            </div>
-
-            <div>
-              <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-3 md:mb-4">
-                {t('footer.resources.title')}
-              </h3>
-              <ul className="space-y-2 md:space-y-3">
-                <li><a href="#about" className="text-sm md:text-base text-white hover:text-orange-400 transition-colors cursor-pointer">{t('footer.resources.aboutUs')}</a></li>
-                <li><a href="#owners" className="text-sm md:text-base text-white hover:text-orange-400 transition-colors cursor-pointer">{t('footer.resources.forOwners')}</a></li>
-                <li><a href="#blog" className="text-sm md:text-base text-white hover:text-orange-400 transition-colors cursor-pointer">{t('footer.resources.blog')}</a></li>
-                <li><a href="#contact" className="text-sm md:text-base text-white hover:text-orange-400 transition-colors cursor-pointer">{t('footer.resources.contact')}</a></li>
-              </ul>
-            </div>
-
-            <div>
-              <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-3 md:mb-4">
-                {t('footer.stayUpdated.title')}
-              </h3>
-              <form className="mb-3 md:mb-4">
-                <div className="relative">
-                  <input
-                    type="email"
-                    placeholder={t('footer.stayUpdated.emailPlaceholder')}
-                    className="w-full bg-white/10 border-b-2 border-white/30 px-0 py-2.5 md:py-3 text-white placeholder-gray-400 outline-none focus:border-orange-400 transition-colors text-sm"
-                  />
-                  <button type="submit" className="absolute right-0 top-1/2 -translate-y-1/2 text-white hover:text-orange-400 transition-colors cursor-pointer">
-                    <i className="ri-arrow-right-line text-xl"></i>
-                  </button>
-                </div>
-              </form>
-              <a href="#privacy" className="text-xs text-gray-400 hover:text-white underline cursor-pointer">
-                {t('footer.stayUpdated.privacyPolicy')}
-              </a>
-            </div>
-          </div>
-
-          <div className="border-t border-white/10 pt-6 md:pt-8 flex flex-col sm:flex-row items-center justify-between gap-3">
-            <p className="text-xs md:text-sm text-gray-400">{t('footer.copyright')}</p>
-            <a href="https://readdy.ai/?ref=logo" target="_blank" rel="noopener noreferrer" className="text-xs md:text-sm text-gray-400 hover:text-white transition-colors cursor-pointer">
-              {t('footer.poweredBy')}
-            </a>
-          </div>
+<footer className="bg-gradient-to-br from-orange-900 to-orange-800 text-white">
+  <div className="max-w-7xl mx-auto px-4 md:px-6 py-10 md:py-16">
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12 mb-10 md:mb-16">
+      <div className="col-span-2 md:col-span-1">
+        <div className="flex flex-col leading-tight mb-3 md:mb-4">
+          <span className="text-xl md:text-2xl font-bold text-white tracking-tight">Eat Local</span>
+          <span className="text-[10px] md:text-xs font-medium text-orange-300 tracking-widest uppercase">
+            Discover · Taste · Connect
+          </span>
         </div>
-      </footer>
+        <p className="text-xs md:text-sm text-gray-400 leading-relaxed">
+          {t('footer.description')}
+        </p>
+      </div>
+
+      <div>
+        <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-3 md:mb-4">
+          {t('footer.explore.title')}
+        </h3>
+        <ul className="space-y-2 md:space-y-3">
+          <li>
+            <Link
+              to="/map-finder"
+              className="text-sm md:text-base text-white hover:text-orange-400 transition-colors cursor-pointer"
+            >
+              {t('footer.explore.findRestaurants')}
+            </Link>
+          </li>
+          <li>
+            <Link
+              to="/restaurants"
+              className="text-sm md:text-base text-white hover:text-orange-400 transition-colors cursor-pointer"
+            >
+              {t('footer.explore.browseCuisines')}
+            </Link>
+          </li>
+          <li>
+            <Link
+              to="/ingredients"
+              className="text-sm md:text-base text-white hover:text-orange-400 transition-colors cursor-pointer"
+            >
+              {t('footer.explore.ingredientLibrary')}
+            </Link>
+          </li>
+          <li>
+            <Link
+              to="/review"
+              className="text-sm md:text-base text-white hover:text-orange-400 transition-colors cursor-pointer"
+            >
+              {t('footer.explore.writeReview')}
+            </Link>
+          </li>
+        </ul>
+      </div>
+
+      <div>
+        <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-3 md:mb-4">
+          {t('footer.resources.title')}
+        </h3>
+        <ul className="space-y-2 md:space-y-3">
+          <li>
+            <a
+              href="#about"
+              className="text-sm md:text-base text-white hover:text-orange-400 transition-colors cursor-pointer"
+            >
+              {t('footer.resources.aboutUs')}
+            </a>
+          </li>
+          <li>
+            <a
+              href="#owners"
+              className="text-sm md:text-base text-white hover:text-orange-400 transition-colors cursor-pointer"
+            >
+              {t('footer.resources.forOwners')}
+            </a>
+          </li>
+          <li>
+            <a
+              href="#blog"
+              className="text-sm md:text-base text-white hover:text-orange-400 transition-colors cursor-pointer"
+            >
+              {t('footer.resources.blog')}
+            </a>
+          </li>
+          <li>
+            <a
+              href="#contact"
+              className="text-sm md:text-base text-white hover:text-orange-400 transition-colors cursor-pointer"
+            >
+              {t('footer.resources.contact')}
+            </a>
+          </li>
+        </ul>
+      </div>
+
+      <div>
+        <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-3 md:mb-4">
+          {t('footer.connect.title')}
+        </h3>
+        <div className="flex gap-3 md:gap-4">
+          <a
+            href="https://instagram.com"
+            target="_blank"
+            rel="noopener noreferrer nofollow"
+            className="w-9 h-9 md:w-10 md:h-10 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-colors cursor-pointer"
+          >
+            <i className="ri-instagram-line text-lg md:text-xl"></i>
+          </a>
+          <a
+            href="https://facebook.com"
+            target="_blank"
+            rel="noopener noreferrer nofollow"
+            className="w-9 h-9 md:w-10 md:h-10 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-colors cursor-pointer"
+          >
+            <i className="ri-facebook-fill text-lg md:text-xl"></i>
+          </a>
+          <a
+            href="https://twitter.com"
+            target="_blank"
+            rel="noopener noreferrer nofollow"
+            className="w-9 h-9 md:w-10 md:h-10 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-colors cursor-pointer"
+          >
+            <i className="ri-twitter-x-line text-lg md:text-xl"></i>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div className="border-t border-white/10 pt-6 md:pt-8 flex flex-col sm:flex-row items-center justify-between gap-3">
+      <p className="text-xs md:text-sm text-gray-400">{t('footer.copyright')}</p>
+      <a
+        href="https://readdy.ai/?ref=logo"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-xs md:text-sm text-gray-400 hover:text-white transition-colors cursor-pointer"
+      >
+        {t('footer.poweredBy')}
+      </a>
+    </div>
+  </div>
+</footer>
 
       <BackToTop />
     </div>

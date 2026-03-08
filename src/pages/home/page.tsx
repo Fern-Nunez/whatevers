@@ -476,7 +476,6 @@ export default function HomePage() {
         </div>
       </section>
 
-{/* Footer */}
 <footer className="bg-gradient-to-br from-orange-900 to-orange-800 text-white">
   <div className="max-w-7xl mx-auto px-4 md:px-6 py-10 md:py-16">
     <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12 mb-10 md:mb-16">
@@ -487,35 +486,9 @@ export default function HomePage() {
             Discover · Taste · Connect
           </span>
         </div>
-        <p className="text-xs md:text-sm text-gray-400 leading-relaxed mb-3 md:mb-4">
+        <p className="text-xs md:text-sm text-gray-400 leading-relaxed">
           {t('footer.description')}
         </p>
-        <div className="flex gap-3 md:gap-4">
-          <a
-            href="https://instagram.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="w-9 h-9 md:w-10 md:h-10 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-colors cursor-pointer"
-          >
-            <i className="ri-instagram-line text-lg md:text-xl"></i>
-          </a>
-          <a
-            href="https://facebook.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="w-9 h-9 md:w-10 md:h-10 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-colors cursor-pointer"
-          >
-            <i className="ri-facebook-fill text-lg md:text-xl"></i>
-          </a>
-          <a
-            href="https://twitter.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="w-9 h-9 md:w-10 md:h-10 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-colors cursor-pointer"
-          >
-            <i className="ri-twitter-x-line text-lg md:text-xl"></i>
-          </a>
-        </div>
       </div>
 
       <div>
@@ -548,12 +521,12 @@ export default function HomePage() {
             </Link>
           </li>
           <li>
-            <a
-              href="#reviews"
+            <Link
+              to="/review"
               className="text-sm md:text-base text-white hover:text-orange-400 transition-colors cursor-pointer"
             >
-              {t('footer.explore.communityReviews')}
-            </a>
+              {t('footer.explore.writeReview')}
+            </Link>
           </li>
         </ul>
       </div>
@@ -600,31 +573,34 @@ export default function HomePage() {
 
       <div>
         <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-3 md:mb-4">
-          {t('footer.stayUpdated.title')}
+          {t('footer.connect.title')}
         </h3>
-
-        <form className="mb-3 md:mb-4">
-          <div className="relative">
-            <input
-              type="email"
-              placeholder={t('footer.stayUpdated.emailPlaceholder')}
-              className="w-full bg-white/10 border-b-2 border-white/30 px-0 py-2.5 md:py-3 text-white placeholder-gray-400 outline-none focus:border-orange-400 transition-colors text-sm"
-            />
-            <button
-              type="submit"
-              className="absolute right-0 top-1/2 -translate-y-1/2 text-white hover:text-orange-400 transition-colors cursor-pointer"
-            >
-              <i className="ri-arrow-right-line text-xl"></i>
-            </button>
-          </div>
-        </form>
-
-        <a
-          href="#privacy"
-          className="text-xs text-gray-400 hover:text-white underline cursor-pointer"
-        >
-          {t('footer.stayUpdated.privacyPolicy')}
-        </a>
+        <div className="flex gap-3 md:gap-4">
+          <a
+            href="https://instagram.com"
+            target="_blank"
+            rel="noopener noreferrer nofollow"
+            className="w-9 h-9 md:w-10 md:h-10 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-colors cursor-pointer"
+          >
+            <i className="ri-instagram-line text-lg md:text-xl"></i>
+          </a>
+          <a
+            href="https://facebook.com"
+            target="_blank"
+            rel="noopener noreferrer nofollow"
+            className="w-9 h-9 md:w-10 md:h-10 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-colors cursor-pointer"
+          >
+            <i className="ri-facebook-fill text-lg md:text-xl"></i>
+          </a>
+          <a
+            href="https://twitter.com"
+            target="_blank"
+            rel="noopener noreferrer nofollow"
+            className="w-9 h-9 md:w-10 md:h-10 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-colors cursor-pointer"
+          >
+            <i className="ri-twitter-x-line text-lg md:text-xl"></i>
+          </a>
+        </div>
       </div>
     </div>
 

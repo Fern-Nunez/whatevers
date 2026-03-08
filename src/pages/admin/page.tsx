@@ -1,6 +1,7 @@
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
+import { createClient } from '@supabase/supabase-js';
 import OverviewTab from './components/OverviewTab';
 import {
   dailyVisitors,
@@ -20,8 +21,18 @@ import {
   behaviorFlow,
 } from '../../mocks/adminAnalytics';
 import MiniLineChart from './components/MiniLineChart';
-
-type Tab = 'overview' | 'traffic' | 'engagement' | 'conversions' | 'behavior' | 'technical';
+const supabase = createClient(
+  import.meta.env.VITE_SUPABASE_URL as string,
+  import.meta.env.VITE_SUPABASE_ANON_KEY as string
+);
+type Tab =
+  | 'overview'
+  | 'traffic'
+  | 'engagement'
+  | 'conversions'
+  | 'behavior'
+  | 'technical'
+  | 'moderation';
 type DateRange = '7d' | '30d' | '90d';
 
 const tabs: { id: Tab; label: string; icon: string }[] = [
@@ -31,6 +42,7 @@ const tabs: { id: Tab; label: string; icon: string }[] = [
   { id: 'conversions', label: 'Conversions', icon: 'ri-exchange-funds-line' },
   { id: 'behavior', label: 'Behavior', icon: 'ri-route-line' },
   { id: 'technical', label: 'Technical', icon: 'ri-cpu-line' },
+  { id: 'moderation', label: 'Moderation', icon: 'ri-store-2-line' },
 ];
 
 function DonutChart({
@@ -641,6 +653,321 @@ function TechnicalTab() {
   );
 }
 
+type SubmittedRestaurant = {
+  id: string;
+  restaurant_name: string;
+  cuisine: string | null;
+  address: string | null;
+  submitter_name: string | null;
+  submitter_email: string | null;
+  reason: string | null;
+  description: string | null;
+  lat: number | null;
+  lng: number | null;
+  status: string | null;
+  created_at: string;
+  image_url: string | null;
+};
+
+function ModerationTab() {
+  const [items, setItems] = useState<SubmittedRestaurant[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
+  const [filter, setFilter] = useState<'pending' | 'approved' | 'declined' | 'all'>('all');
+  const [error, setError] = useState('');
+
+  const fetchSubmissions = useCallback(async () => {
+    setLoading(true);
+    setError('');
+
+    let query = supabase
+      .from('restaurant_submissions')
+      .select(
+        'id, restaurant_name, cuisine, address, submitter_name, submitter_email, reason, description, lat, lng, status, created_at, image_url'
+      )
+      .order('created_at', { ascending: false });
+
+    if (filter !== 'all') {
+      query = query.eq('status', filter);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      setError(error.message);
+      setLoading(false);
+      return;
+    }
+
+    setItems((data || []) as SubmittedRestaurant[]);
+    setLoading(false);
+  }, [filter]);
+
+  useEffect(() => {
+    fetchSubmissions();
+  }, [fetchSubmissions]);
+
+  const handleDecline = async (item: SubmittedRestaurant) => {
+    setActionLoadingId(item.id);
+    setError('');
+
+    const { error } = await supabase
+      .from('restaurant_submissions')
+      .update({ status: 'declined' })
+      .eq('id', item.id);
+
+    if (error) {
+      setError(error.message);
+      setActionLoadingId(null);
+      return;
+    }
+
+    setItems((prev) =>
+      prev.map((row) =>
+        row.id === item.id ? { ...row, status: 'declined' } : row
+      )
+    );
+    setActionLoadingId(null);
+  };
+
+const handleApprove = async (item: SubmittedRestaurant) => {
+  setActionLoadingId(item.id);
+  setError('');
+
+  console.log('APPROVING ITEM:', item);
+
+  const restaurantPayload = {
+    name: item.restaurant_name,
+    cuisine: item.cuisine || null,
+    address: item.address || '',
+    description: item.description || item.reason || null,
+    lat: item.lat,
+    lng: item.lng,
+    image: item.image_url || null,
+    is_chain: false,
+    approved: true
+  };
+
+  console.log('RESTAURANT PAYLOAD:', restaurantPayload);
+
+  const { data: insertedRestaurant, error: insertError } = await supabase
+    .from('restaurants')
+    .insert([restaurantPayload])
+    .select('*')
+    .single();
+
+  console.log('INSERTED RESTAURANT RESULT:', insertedRestaurant);
+  console.log('INSERT ERROR:', insertError);
+
+  if (insertError) {
+    setError(insertError.message);
+    setActionLoadingId(null);
+    return;
+  }
+
+  const { data: updatedSubmission, error: updateError } = await supabase
+    .from('restaurant_submissions')
+    .update({ status: 'approved' })
+    .eq('id', item.id)
+    .select('*')
+    .single();
+
+  console.log('UPDATED SUBMISSION RESULT:', updatedSubmission);
+  console.log('UPDATE ERROR:', updateError);
+
+  if (updateError) {
+    setError(updateError.message);
+    setActionLoadingId(null);
+    return;
+  }
+
+  setItems((prev) => prev.filter((row) => row.id !== item.id));
+  setActionLoadingId(null);
+};
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-gray-800 rounded-2xl p-6 border border-gray-700">
+        <div className="flex items-center justify-between mb-5">
+          <div>
+            <h3 className="text-white font-semibold text-lg">Restaurant Moderation</h3>
+            <p className="text-gray-400 text-sm">
+              Approve or decline submitted restaurant listings
+            </p>
+          </div>
+
+          <div className="flex gap-2 bg-gray-700 rounded-xl p-1">
+            {(['pending', 'approved', 'declined', 'all'] as const).map((value) => (
+              <button
+                key={value}
+                onClick={() => setFilter(value)}
+                className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all whitespace-nowrap cursor-pointer ${
+                  filter === value
+                    ? 'bg-orange-500 text-white'
+                    : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                {value.charAt(0).toUpperCase() + value.slice(1)}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {error && (
+          <div className="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+            {error}
+          </div>
+        )}
+
+        {loading ? (
+          <div className="py-12 text-center text-gray-400">
+            <i className="ri-loader-4-line animate-spin text-2xl mb-3 block"></i>
+            Loading submissions...
+          </div>
+        ) : items.length === 0 ? (
+          <div className="py-12 text-center text-gray-500">
+            No submissions found.
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {items.map((item) => {
+              const isPending = item.status === 'pending';
+              const isApproved = item.status === 'approved';
+              const isDeclined = item.status === 'declined';
+              const isBusy = actionLoadingId === item.id;
+
+              return (
+                <div
+                  key={item.id}
+                  className="bg-gray-900 border border-gray-700 rounded-2xl p-5"
+                >
+                  <div className="flex items-start justify-between gap-4 mb-4">
+                    <div>
+                      <div className="flex items-center gap-3 mb-2 flex-wrap">
+                        <h4 className="text-white text-lg font-semibold">
+                          {item.restaurant_name}
+                        </h4>
+
+                        {item.cuisine && (
+                          <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-orange-500/20 text-orange-300">
+                            {item.cuisine}
+                          </span>
+                        )}
+
+                        <span
+                          className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
+                            isPending
+                              ? 'bg-amber-500/20 text-amber-300'
+                              : isApproved
+                              ? 'bg-emerald-500/20 text-emerald-300'
+                              : 'bg-red-500/20 text-red-300'
+                          }`}
+                        >
+                          {item.status || 'pending'}
+                        </span>
+                      </div>
+
+                      <p className="text-gray-400 text-sm">
+                        {item.address || 'No address provided'}
+                      </p>
+                    </div>
+
+                    {item.image_url && (
+                      <img
+                        src={item.image_url}
+                        alt={item.restaurant_name}
+                        className="w-24 h-24 rounded-xl object-cover border border-gray-700"
+                      />
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4 mb-4">
+                    <div className="bg-gray-800 rounded-xl p-4">
+                      <p className="text-gray-500 text-xs uppercase tracking-wider mb-1">
+                        Submitter
+                      </p>
+                      <p className="text-white text-sm font-medium">
+                        {item.submitter_name || 'N/A'}
+                      </p>
+                      <p className="text-gray-400 text-sm">
+                        {item.submitter_email || 'No email'}
+                      </p>
+                    </div>
+
+                    <div className="bg-gray-800 rounded-xl p-4">
+                      <p className="text-gray-500 text-xs uppercase tracking-wider mb-1">
+                        Submitted
+                      </p>
+                      <p className="text-white text-sm font-medium">
+                        {new Date(item.created_at).toLocaleDateString()}
+                      </p>
+                      <p className="text-gray-400 text-sm">
+                        {new Date(item.created_at).toLocaleTimeString()}
+                      </p>
+                    </div>
+                  </div>
+
+                  {(item.reason || item.description) && (
+                    <div className="space-y-3 mb-4">
+                      {item.reason && (
+                        <div className="bg-gray-800 rounded-xl p-4">
+                          <p className="text-gray-500 text-xs uppercase tracking-wider mb-2">
+                            Reason
+                          </p>
+                          <p className="text-gray-300 text-sm leading-relaxed">
+                            {item.reason}
+                          </p>
+                        </div>
+                      )}
+
+                      {item.description && (
+                        <div className="bg-gray-800 rounded-xl p-4">
+                          <p className="text-gray-500 text-xs uppercase tracking-wider mb-2">
+                            Description
+                          </p>
+                          <p className="text-gray-300 text-sm leading-relaxed">
+                            {item.description}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-between gap-4 flex-wrap">
+                    <div className="text-xs text-gray-500">
+                      {item.lat != null && item.lng != null
+                        ? `Coordinates: ${item.lat}, ${item.lng}`
+                        : 'No coordinates provided'}
+                    </div>
+
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleDecline(item)}
+                        disabled={isBusy || isDeclined}
+                        className="px-4 py-2 rounded-xl text-sm font-medium bg-red-500/15 text-red-300 border border-red-500/30 hover:bg-red-500/25 transition-all disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap cursor-pointer"
+                      >
+                        {isBusy ? 'Working...' : 'Decline'}
+                      </button>
+
+                      <button
+                        onClick={() => handleApprove(item)}
+                        disabled={isBusy || isApproved}
+                        className="px-4 py-2 rounded-xl text-sm font-medium bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/25 transition-all disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap cursor-pointer"
+                      >
+                        {isBusy ? 'Working...' : 'Approve'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<Tab>('overview');
   const [dateRange, setDateRange] = useState<DateRange>('30d');
@@ -739,6 +1066,7 @@ export default function AdminPage() {
           {activeTab === 'conversions' && <ConversionsTab />}
           {activeTab === 'behavior' && <BehaviorTab />}
           {activeTab === 'technical' && <TechnicalTab />}
+          {activeTab === 'moderation' && <ModerationTab />}
         </main>
       </div>
     </div>
