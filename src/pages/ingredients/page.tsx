@@ -44,10 +44,10 @@ export default function IngredientsPage() {
               <Link to="/restaurants" className="text-sm font-medium text-gray-600 hover:text-orange-500 transition-colors whitespace-nowrap cursor-pointer">
                 {t('nav.restaurants')}
               </Link>
-              <Link to="/ingredients" className="text-sm font-semibold text-orange-500 whitespace-nowrap cursor-pointer">
+              <Link to="/ingredients" className="text-sm font-medium text-gray-600 hover:text-orange-500 transition-colors whitespace-nowrap cursor-pointer">
                 {t('nav.ingredients')}
               </Link>
-              <Link to="/cooking-videos" className="text-sm font-semibold text-orange-500 whitespace-nowrap cursor-pointer">
+              <Link to="/cooking-videos" className="text-sm font-medium text-gray-600 hover:text-orange-500 transition-colors whitespace-nowrap cursor-pointer">
                 {t('nav.cookingVideos')}
               </Link>
               <Link to="/review" className="text-sm font-medium text-gray-600 hover:text-orange-500 transition-colors whitespace-nowrap cursor-pointer">
@@ -84,14 +84,14 @@ export default function IngredientsPage() {
               <Link
                 to="/ingredients"
                 onClick={() => setMobileMenuOpen(false)}
-                className="text-sm font-semibold text-orange-500 px-2 py-1.5 cursor-pointer"
+                className="text-sm font-medium text-gray-700 px-2 py-1.5 hover:text-orange-500 cursor-pointer"
               >
                 {t('nav.ingredients')}
               </Link>
               <Link
                 to="/cooking-videos"
                 onClick={() => setMobileMenuOpen(false)}
-                className="text-sm font-semibold text-orange-500 px-2 py-1.5 cursor-pointer"
+                className="text-sm font-medium text-gray-700 px-2 py-1.5 hover:text-orange-500 cursor-pointer"
               >
                 {t('nav.cookingVideos')}
               </Link>
