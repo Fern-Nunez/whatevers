@@ -47,6 +47,9 @@ export default function IngredientsPage() {
               <Link to="/ingredients" className="text-sm font-semibold text-orange-500 whitespace-nowrap cursor-pointer">
                 {t('nav.ingredients')}
               </Link>
+              <Link to="/cooking-videos" className="text-sm font-semibold text-orange-500 whitespace-nowrap cursor-pointer">
+                {t('nav.cookingVideos')}
+              </Link>
               <Link to="/review" className="text-sm font-medium text-gray-600 hover:text-orange-500 transition-colors whitespace-nowrap cursor-pointer">
                 {t('nav.reviews')}
               </Link>
@@ -84,6 +87,13 @@ export default function IngredientsPage() {
                 className="text-sm font-semibold text-orange-500 px-2 py-1.5 cursor-pointer"
               >
                 {t('nav.ingredients')}
+              </Link>
+              <Link
+                to="/cooking-videos"
+                onClick={() => setMobileMenuOpen(false)}
+                className="text-sm font-semibold text-orange-500 px-2 py-1.5 cursor-pointer"
+              >
+                {t('nav.cookingVideos')}
               </Link>
               <Link
                 to="/review"

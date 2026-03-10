@@ -30,7 +30,6 @@ export default function CookingVideosPage() {
             </Link>
             <div className="flex items-center gap-8">
               <Link to="/" className="text-sm font-medium text-gray-600 hover:text-orange-500 transition-colors whitespace-nowrap cursor-pointer">{t('nav.home')}</Link>
-              <Link to="/map-finder" className="text-sm font-medium text-gray-600 hover:text-orange-500 transition-colors whitespace-nowrap cursor-pointer">{t('nav.mapFinder')}</Link>
               <Link to="/restaurants" className="text-sm font-medium text-gray-600 hover:text-orange-500 transition-colors whitespace-nowrap cursor-pointer">{t('nav.restaurants')}</Link>
               <Link to="/ingredients" className="text-sm font-medium text-gray-600 hover:text-orange-500 transition-colors whitespace-nowrap cursor-pointer">{t('nav.ingredients')}</Link>
               <Link to="/cooking-videos" className="text-sm font-semibold text-orange-500 whitespace-nowrap cursor-pointer">{t('nav.cookingVideos')}</Link>
